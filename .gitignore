@@ -1,0 +1,13 @@
+# SwiftPM
+.build/
+.swiftpm/
+Package.resolved
+
+# Hand-assembled demo app
+build/
+
+# Generated documentation — rebuild with ./Scripts/generate-docs.sh
+Docs/
+
+# macOS
+.DS_Store
