@@ -6,7 +6,7 @@ description: Build macOS SwiftUI interfaces with the ShadSwift component library
 # ShadSwift
 
 A SwiftUI port of [shadcn/ui](https://ui.shadcn.com/docs/components) for macOS 14+.
-Thirty-six components, real Lucide icons, Geist bundled, and one theme value that
+Thirty-nine components, real Lucide icons, Geist bundled, and one theme value that
 drives every colour, radius, type size, shadow and animation.
 
 Everything is prefixed `Shad`. If you are reaching for a plain SwiftUI control in a
@@ -78,6 +78,7 @@ Use these instead of hand-rolling or falling back to AppKit/SwiftUI defaults.
 | Button | `ShadButton` — or `.buttonStyle(.shad(...))` on a plain `Button` |
 | Text field, password, search | `ShadInput` |
 | Multi-line text | `ShadTextarea` |
+| Standalone form label | `ShadLabel` |
 | File picker | `ShadFileInput` |
 | Checkbox / toggle / radio | `ShadCheckbox`, `ShadSwitch`, `ShadRadioGroup` |
 | Slider | `ShadSlider` (single value or multiple thumbs) |
@@ -103,7 +104,8 @@ Use these instead of hand-rolling or falling back to AppKit/SwiftUI defaults.
 | App sidebar | `ShadSidebarProvider` + `ShadSidebar` + `ShadSidebarInset` |
 | Breadcrumbs | `ShadBreadcrumb`, or `ShadBreadcrumbPath` for a data-driven trail |
 | Divider | `ShadSeparator` |
-| Date / time entry | `ShadDatePicker`, `ShadDateRangePicker`, `ShadDateInput`, `ShadDateTimePicker`, `ShadCalendar` |
+| Date / time entry | `ShadDatePicker`, `ShadDateRangePicker`, `ShadDateInput`, `ShadDateTimePicker` |
+| Inline month grid | `ShadCalendar` |
 | Chat transcript | `ShadMessage`, `ShadBubble`, `ShadMarker`, `ShadMessageScroller` |
 | Icon | `ShadIconView(.check, size: 16)` |
 
@@ -128,10 +130,10 @@ ShadButton(icon: .plus, variant: .ghost, size: .icon, accessibilityLabel: "Add")
 - **Controls are flat.** Buttons, inputs, checkboxes, switches, sliders and menus
   carry no shadow. Only cards, dialogs and toasts are elevated. Do not add
   `.shadow(...)`.
-- **Icons come from `ShadIcon`** — 74 named cases (`.check`, `.chevronDown`,
-  `.trash`, `.search`, `.settings`, …), `.lucide("circle-plus")` for any of the 72
-  bundled glyphs by Lucide name, `.custom("sfsymbol.name")` as the SF Symbols
-  escape hatch. Prefer the named cases; prefer Lucide over SF Symbols, whose
+- **Icons come from `ShadIcon`** — 72 named cases (`.check`, `.chevronDown`,
+  `.trash`, `.search`, `.settings`, …), one per bundled glyph, plus two escape
+  hatches: `.lucide("circle-plus")` reaches a glyph by its Lucide name and
+  `.custom("sfsymbol.name")` falls back to an SF Symbol. Prefer the named cases; prefer Lucide over SF Symbols, whose
   optical weight is heavier than the text beside it.
 
 A form, end to end:

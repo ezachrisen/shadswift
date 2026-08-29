@@ -519,8 +519,9 @@ cloudUpload zap tag bookmark clock filter list grid clipboardList gripVertical
 loaderCircle slash
 ```
 
-Plus `.lucide("kebab-case-name")` for any of the 72 bundled Lucide glyphs, and
-`.custom("sfsymbol.name")` for an SF Symbol. Glyphs are stroked natively at
+That is 72 cases, one per bundled glyph. Two more reach outside the list:
+`.lucide("kebab-case-name")` addresses a bundled glyph by its Lucide name, and
+`.custom("sfsymbol.name")` falls back to an SF Symbol. Glyphs are stroked natively at
 Lucide's 2-in-24 weight.
 
 ## Utilities

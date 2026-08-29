@@ -2,7 +2,7 @@
 
 A SwiftUI component library for macOS, modelled on [shadcn/ui](https://ui.shadcn.com/docs/components).
 
-Twenty-six components, every documented variant, and one theme value that drives
+Thirty-nine components, every documented variant, and one theme value that drives
 every colour, corner radius, type size, shadow and animation in the library.
 Geist ships with the package, and the metrics are measured from the live shadcn
 site rather than eyeballed.
@@ -26,12 +26,18 @@ struct MyApp: App {
 
 | Group | Components |
 | --- | --- |
-| Display | Button · Badge · Card · Avatar · Item · Spinner |
-| Controls | Switch · Checkbox · Radio Group · Slider · Tabs |
-| Forms | Input · Textarea · Field · Form · Label |
-| Overlays | Select · Combobox · Dropdown Menu · Dialog · Alert Dialog · Toast |
-| Layout | Sidebar · Separator |
-| Conversation | Message · Bubble · Marker · Message Scroller |
+| Display (7) | Button · Badge · Card · Avatar · Avatar Editor · Item · Spinner |
+| Controls (5) | Switch · Checkbox · Radio Group · Slider · Tabs |
+| Forms (6) | Input · File Input · Textarea · Label · Field · Form |
+| Dates (5) | Calendar · Date Picker · Date Range Picker · Date Input · Date Time Picker |
+| Overlays (6) | Select · Combobox · Dropdown Menu · Dialog · Alert Dialog · Toast |
+| Data (3) | Table · Data Table · Pagination |
+| Layout (3) | Sidebar · Breadcrumb · Separator |
+| Conversation (4) | Message · Bubble · Marker · Message Scroller |
+
+Plus the pieces those are built from — `ShadIconView`, `ShadMenuRow`,
+`ShadBreadcrumbPath`, `ShadPopoverSurface` — and `.shadPopover(...)` for
+anchoring a panel of your own to a control.
 
 ## Installing it
 
