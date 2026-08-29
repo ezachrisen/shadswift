@@ -21,11 +21,6 @@ let package = Package(
             swiftSettings: [.swiftLanguageMode(.v5)]
         ),
         .executableTarget(
-            name: "ShadSwiftShot",
-            dependencies: ["ShadSwift"],
-            swiftSettings: [.swiftLanguageMode(.v5)]
-        ),
-        .executableTarget(
             name: "ShadSwiftDocs",
             dependencies: ["ShadSwift"],
             swiftSettings: [.swiftLanguageMode(.v5)]

@@ -206,8 +206,9 @@ private struct ShadGrabCursor: ViewModifier {
 /// The framing control: a picture inside the avatar's own mask, a zoom slider
 /// under it, and a drop target for a replacement image file.
 ///
-/// Drag the picture to reposition it. Both gestures are clamped, so no matter
-/// how far the pointer travels the mask stays covered.
+/// Drag the picture to reposition it. The pan is clamped, and re-clamped when
+/// the zoom comes back down, so the mask stays covered however far the pointer
+/// travels.
 ///
 /// ```swift
 /// ShadAvatarCropper(photo: $photo)

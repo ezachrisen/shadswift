@@ -272,11 +272,8 @@ struct AvatarPage: View {
             ShadEditableAvatar($avatar, fallback: "EV", customSize: 96)
 
             VStack(alignment: .leading, spacing: 4) {
-                Text("Evil Rabbit")
-                    .font(.system(size: 16, weight: .semibold))
-                Text("m@example.com")
-                    .font(.system(size: 13))
-                    .foregroundStyle(.secondary)
+                ShadItemTitle("Evil Rabbit")
+                ShadItemDescription("m@example.com")
                 DemoCaption("Click the picture to change it")
                     .padding(.top, 4)
             }
