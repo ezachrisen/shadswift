@@ -187,7 +187,9 @@ struct ShadButtonSurface<Label: View>: View {
         }
     }
 
-    private var isHighlighted: Bool { isHovering || isExpanded }
+    // Hover is the desktop affordance; pressed is the touch affordance. Keep
+    // both in the same state so iOS gets immediate visual feedback too.
+    private var isHighlighted: Bool { isHovering || isExpanded || isPressed }
 
     private var background: Color {
         switch variant {

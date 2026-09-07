@@ -1,5 +1,7 @@
-import AppKit
 import SwiftUI
+#if canImport(AppKit)
+import AppKit
+#endif
 
 /// Tracks pointer hover without the boilerplate, and forces the state back to
 /// `false` when the control becomes disabled.
@@ -26,10 +28,14 @@ extension View {
     /// Switches the cursor to the pointing hand while hovering an interactive
     /// surface, the macOS equivalent of `cursor-pointer`.
     func shadPointerCursor(_ enabled: Bool = true) -> some View {
+#if os(macOS)
         onHover { inside in
             guard enabled else { return }
             if inside { NSCursor.pointingHand.push() } else { NSCursor.pop() }
         }
+#else
+        self
+#endif
     }
 }
 

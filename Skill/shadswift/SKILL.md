@@ -1,11 +1,12 @@
 ---
 name: shadswift
-description: Build macOS SwiftUI interfaces with the ShadSwift component library — ShadButton, ShadInput, ShadSelect, ShadDialog, ShadTable, ShadSidebar, ShadToast, ShadForm and OKLCH theming via ShadThemeSet. Use whenever writing or editing SwiftUI views in a project that depends on ShadSwift, when adding ShadSwift to a project, or when a macOS app should follow shadcn/ui styling.
+description: Build iOS and macOS SwiftUI interfaces with the ShadSwift component library — ShadButton, ShadInput, ShadSelect, ShadDialog, ShadTable, ShadSidebar, ShadToast, ShadForm and OKLCH theming via ShadThemeSet. Use whenever writing or editing SwiftUI views in a project that depends on ShadSwift, when adding ShadSwift to a project, or when an Apple-platform app should follow shadcn/ui styling.
 ---
 
 # ShadSwift
 
-A SwiftUI port of [shadcn/ui](https://ui.shadcn.com/docs/components) for macOS 14+.
+A SwiftUI port of [shadcn/ui](https://ui.shadcn.com/docs/components) for iOS 17+
+and macOS 14+.
 Thirty-nine components, real Lucide icons, Geist bundled, and one theme value that
 drives every colour, radius, type size, shadow and animation.
 
@@ -25,8 +26,9 @@ targets: [
 ]
 ```
 
-In Xcode: File → Add Package Dependencies → paste the URL. Requires macOS 14+ and a
-full Xcode install (the SwiftUI macros need more than Command Line Tools).
+In Xcode: File → Add Package Dependencies → paste the URL. Requires iOS 17+ or
+macOS 14+ and a full Xcode install (the SwiftUI macros need more than Command
+Line Tools).
 
 ## The three setup rules
 
@@ -174,10 +176,11 @@ ShadSelect(selection: $role, options: [
 - **`ShadTable` vs `ShadDataTable`.** `ShadTable` is the presentational one.
   `ShadDataTable` wraps it with a filter field, a column picker and pagination —
   reach for it whenever the data is user-searchable.
-- **Popovers are real `NSPanel`s.** `ShadSelect`, `ShadCombobox` and
-  `ShadDropdownMenu` present in a child window so they can escape a `ScrollView`
-  and the window edge. They need a real window — they will not appear in an Xcode
-  preview that has none.
+- **Popovers are platform-aware.** On macOS, `ShadSelect`, `ShadCombobox` and
+  `ShadDropdownMenu` use child-window `NSPanel`s so they can escape a
+  `ScrollView`; on iOS they use a custom window-level host so the same themed
+  surface stays above surrounding controls without adopting system popover
+  chrome.
 - **Snapshotting with `ImageRenderer` needs `.shadStaticRendering()`**, which
   swaps `ScrollView`/`LazyVStack`/`TextField` for renderable stand-ins.
 - **Sidebar needs the provider.** `ShadSidebar` and `ShadSidebarInset` must both

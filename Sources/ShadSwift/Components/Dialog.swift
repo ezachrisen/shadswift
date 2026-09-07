@@ -1,4 +1,7 @@
 import SwiftUI
+#if canImport(AppKit)
+import AppKit
+#endif
 
 private struct ShadDialogDismissKey: EnvironmentKey {
     static let defaultValue: () -> Void = {}
@@ -96,6 +99,7 @@ private struct ShadDialogPresenter<DialogContent: View>: ViewModifier {
 }
 
 /// Invisible helper that watches for the Escape key while a dialog is open.
+#if os(macOS)
 struct ShadKeyCatcher: NSViewRepresentable {
     let isActive: Bool
     let onEscape: () -> Void
@@ -136,6 +140,14 @@ struct ShadKeyCatcher: NSViewRepresentable {
         }
     }
 }
+#else
+struct ShadKeyCatcher: View {
+    let isActive: Bool
+    let onEscape: () -> Void
+
+    var body: some View { EmptyView() }
+}
+#endif
 
 /// The dialog panel itself.
 ///

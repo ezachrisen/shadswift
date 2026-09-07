@@ -137,7 +137,7 @@ struct ComboboxPage: View {
                     selection: $multiple,
                     options: frameworks,
                     placeholder: "Add frameworks…",
-                    width: 380
+                    width: multipleWidth
                 )
             }
 
@@ -159,6 +159,14 @@ struct ComboboxPage: View {
                 }
             }
         }
+    }
+
+    private var multipleWidth: CGFloat {
+#if os(iOS)
+        320
+#else
+        380
+#endif
     }
 }
 

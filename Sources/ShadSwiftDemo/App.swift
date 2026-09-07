@@ -1,21 +1,30 @@
 import SwiftUI
+#if os(macOS)
 import AppKit
+#endif
 import ShadSwift
 
 @main
 struct ShadSwiftDemoApp: App {
+#if os(macOS)
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var delegate
+#endif
 
     var body: some Scene {
         WindowGroup("ShadSwift") {
             RootView()
+#if os(macOS)
                 .frame(minWidth: 1040, minHeight: 720)
+#endif
         }
+#if os(macOS)
         .windowStyle(.hiddenTitleBar)
         .defaultSize(width: 1280, height: 860)
+#endif
     }
 }
 
+#if os(macOS)
 final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.regular)
@@ -24,6 +33,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { true }
 }
+#endif
 
 /// Every page in the gallery.
 enum DemoPageID: String, CaseIterable, Identifiable, Hashable {

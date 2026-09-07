@@ -1,5 +1,7 @@
 import SwiftUI
+#if canImport(AppKit)
 import AppKit
+#endif
 
 /// A multi-line text input.
 ///
@@ -49,9 +51,11 @@ public struct ShadTextarea: View {
             .frame(width: 8, height: 8)
             .padding(5)
             .contentShape(Rectangle())
+#if os(macOS)
             .onHover { inside in
                 if inside { NSCursor.resizeUpDown.push() } else { NSCursor.pop() }
             }
+#endif
             .gesture(
                 DragGesture()
                     .onChanged { value in

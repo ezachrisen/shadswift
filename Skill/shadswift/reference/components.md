@@ -309,7 +309,7 @@ A pick / drag-to-reposition / zoom / crop flow, presented as a dialog.
 
 ```swift
 ShadAvatarCrop(zoom: Double = 1, offset: CGSize = .zero)     // .fill
-ShadAvatarPhoto(image: NSImage? = nil, crop: ShadAvatarCrop = .fill)   // .empty, .isEmpty
+ShadAvatarPhoto(image: ShadPlatformImage? = nil, crop: ShadAvatarCrop = .fill) // UIImage on iOS, NSImage on macOS
 
 @State private var avatar = ShadAvatarEditorState(image: nil)   // or (photo:)
 

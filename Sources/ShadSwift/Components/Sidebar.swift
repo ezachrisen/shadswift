@@ -1,4 +1,7 @@
 import SwiftUI
+#if canImport(AppKit)
+import AppKit
+#endif
 
 /// Which edge the sidebar lives on.
 public enum ShadSidebarSide: String, CaseIterable, Sendable {
@@ -604,10 +607,14 @@ public struct ShadSidebarRail: View {
             .frame(width: 4)
             .frame(maxHeight: .infinity)
             .contentShape(Rectangle())
+#if os(macOS)
             .onHover { hovering in
                 isHovering = hovering
                 if hovering { NSCursor.resizeLeftRight.push() } else { NSCursor.pop() }
             }
+#else
+            .onHover { hovering in isHovering = hovering }
+#endif
             .onTapGesture {
                 withAnimation(theme.presentationAnimation) { state.toggle() }
             }

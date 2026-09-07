@@ -126,17 +126,35 @@ extension Color {
 
 // MARK: - Mixing
 
+#if canImport(UIKit)
+import UIKit
+#elseif canImport(AppKit)
 import AppKit
+#endif
 
 extension Color {
     /// The colour's gamma-encoded sRGB components, or `nil` when it cannot be
     /// resolved (a dynamic system colour outside a drawing context, say).
     public var shadRGBA: (red: Double, green: Double, blue: Double, alpha: Double)? {
+#if canImport(UIKit)
+        guard let converted = UIColor(self).cgColor.converted(to: CGColorSpace(name: CGColorSpace.sRGB)!, intent: .defaultIntent, options: nil),
+              let components = converted.components else { return nil }
+        if components.count >= 4 {
+            return (Double(components[0]), Double(components[1]), Double(components[2]), Double(components[3]))
+        }
+        if components.count == 2 {
+            return (Double(components[0]), Double(components[0]), Double(components[0]), Double(components[1]))
+        }
+        return nil
+#elseif canImport(AppKit)
         guard let converted = NSColor(self).usingColorSpace(.sRGB) else { return nil }
         return (Double(converted.redComponent),
                 Double(converted.greenComponent),
                 Double(converted.blueComponent),
                 Double(converted.alphaComponent))
+#else
+        return nil
+#endif
     }
 
     /// Mixes this colour with another in the OkLab space — the Swift equivalent

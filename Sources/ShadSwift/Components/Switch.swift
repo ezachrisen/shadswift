@@ -39,13 +39,15 @@ public struct ShadSwitch: View {
     }
 
     private var trackColor: Color {
-        if isOn { return theme.colors.primary }
+        // Match the native iOS switch convention while keeping the color
+        // controlled by the active ShadColors palette on both platforms.
+        if isOn { return theme.colors.success }
         return theme.colorScheme == .dark ? theme.colors.input.opacity(0.8) : theme.colors.input
     }
 
     private var thumbColor: Color {
         guard theme.colorScheme == .dark else { return theme.colors.background }
-        return isOn ? theme.colors.primaryForeground : theme.colors.foreground
+        return isOn ? theme.colors.successForeground : theme.colors.foreground
     }
 
     private var borderColor: Color {

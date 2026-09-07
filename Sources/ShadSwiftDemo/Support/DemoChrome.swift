@@ -28,8 +28,8 @@ struct DemoSection<Content: View>: View {
                         .fixedSize(horizontal: false, vertical: true)
                 }
             }
-            content()
-                .padding(32)
+            examples
+                .padding(sectionPadding)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .background(
                     ShadRoundedRectangle(cornerRadius: theme.radius.lg)
@@ -40,6 +40,20 @@ struct DemoSection<Content: View>: View {
                         .strokeBorder(theme.colors.border, lineWidth: theme.borderWidth)
                 )
         }
+    }
+
+    @ViewBuilder
+    private var examples: some View {
+        content()
+            .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private var sectionPadding: CGFloat {
+#if os(iOS)
+        16
+#else
+        32
+#endif
     }
 }
 
@@ -76,10 +90,10 @@ struct DemoPage<Content: View>: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 44) {
+            VStack(alignment: .leading, spacing: pageSpacing) {
                 VStack(alignment: .leading, spacing: 10) {
                     Text(title)
-                        .font(theme.font(34, theme.typography.semibold))
+                        .font(theme.font(pageTitleSize, theme.typography.semibold))
                         .foregroundStyle(theme.colors.foreground)
                     Text(subtitle)
                         .font(theme.font(theme.typography.base))
@@ -89,13 +103,41 @@ struct DemoPage<Content: View>: View {
                 .padding(.bottom, 4)
                 content()
             }
+#if os(iOS)
+            .padding(.horizontal, 16)
+#else
             .padding(.horizontal, 48)
-            .padding(.top, 44)
+#endif
+            .padding(.top, pageTopPadding)
             .padding(.bottom, 96)
             .frame(maxWidth: 1000, alignment: .leading)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .background(theme.colors.background)
+    }
+
+    private var pageSpacing: CGFloat {
+#if os(iOS)
+        28
+#else
+        44
+#endif
+    }
+
+    private var pageTitleSize: CGFloat {
+#if os(iOS)
+        28
+#else
+        34
+#endif
+    }
+
+    private var pageTopPadding: CGFloat {
+#if os(iOS)
+        24
+#else
+        44
+#endif
     }
 }
 
@@ -130,6 +172,10 @@ struct DemoLabeled<Content: View>: View {
             DemoCaption(label)
             content()
         }
+#if os(iOS)
+        .frame(maxWidth: .infinity, alignment: .leading)
+#else
         .frame(width: width, alignment: .leading)
+#endif
     }
 }

@@ -1,4 +1,9 @@
+import ShadSwift
+#if os(macOS)
 import AppKit
+#else
+import UIKit
+#endif
 
 /// A stand-in photograph, drawn rather than shipped.
 ///
@@ -6,8 +11,9 @@ import AppKit
 /// a wide one makes the point better than a square: at 1× it already overhangs
 /// the mask, so there is something to drag straight away.
 enum DemoPhoto {
-    static let landscape: NSImage = render()
+    static let landscape: ShadPlatformImage = render()
 
+#if os(macOS)
     private static func render() -> NSImage {
         NSImage(size: NSSize(width: 720, height: 480), flipped: false) { rect in
             NSGradient(
@@ -53,4 +59,54 @@ enum DemoPhoto {
         path.close()
         return path
     }
+#else
+    private static func render() -> UIImage {
+        let size = CGSize(width: 720, height: 480)
+        return UIGraphicsImageRenderer(size: size).image { renderer in
+            let context = renderer.cgContext
+            let colors = [
+                UIColor(red: 0.16, green: 0.22, blue: 0.42, alpha: 1).cgColor,
+                UIColor(red: 0.43, green: 0.35, blue: 0.58, alpha: 1).cgColor,
+                UIColor(red: 0.94, green: 0.62, blue: 0.44, alpha: 1).cgColor,
+            ] as CFArray
+            let gradient = CGGradient(colorsSpace: CGColorSpaceCreateDeviceRGB(), colors: colors, locations: [0, 0.55, 1])!
+            context.drawLinearGradient(
+                gradient,
+                start: CGPoint(x: size.width / 2, y: size.height),
+                end: CGPoint(x: size.width / 2, y: 0),
+                options: []
+            )
+
+            context.setFillColor(UIColor(red: 1, green: 0.94, blue: 0.78, alpha: 0.95).cgColor)
+            context.fillEllipse(in: CGRect(x: size.width * 0.62, y: size.height * 0.46, width: 96, height: 96))
+
+            context.setFillColor(UIColor(red: 0.24, green: 0.22, blue: 0.38, alpha: 0.85).cgColor)
+            ridge(in: CGRect(origin: .zero, size: size), baseline: 0.16,
+                  peaks: [(0.05, 0.42), (0.32, 0.30), (0.6, 0.5), (0.9, 0.34)], in: context)
+
+            context.setFillColor(UIColor(red: 0.12, green: 0.13, blue: 0.24, alpha: 1).cgColor)
+            ridge(in: CGRect(origin: .zero, size: size), baseline: 0,
+                  peaks: [(0.0, 0.22), (0.25, 0.34), (0.55, 0.2), (0.82, 0.3), (1.0, 0.18)], in: context)
+        }
+    }
+
+    private static func ridge(
+        in rect: CGRect,
+        baseline: CGFloat,
+        peaks: [(x: CGFloat, y: CGFloat)],
+        in context: CGContext
+    ) {
+        let path = CGMutablePath()
+        path.move(to: CGPoint(x: 0, y: rect.height * baseline))
+        for peak in peaks {
+            path.addLine(to: CGPoint(x: rect.width * peak.x, y: rect.height * peak.y))
+        }
+        path.addLine(to: CGPoint(x: rect.width, y: rect.height * baseline))
+        path.addLine(to: CGPoint(x: rect.width, y: 0))
+        path.addLine(to: CGPoint(x: 0, y: 0))
+        path.closeSubpath()
+        context.addPath(path)
+        context.fillPath()
+    }
+#endif
 }

@@ -1,6 +1,12 @@
-import AppKit
 import SwiftUI
 import UniformTypeIdentifiers
+#if canImport(UIKit)
+import UIKit
+public typealias ShadPlatformImage = UIImage
+#elseif canImport(AppKit)
+import AppKit
+public typealias ShadPlatformImage = NSImage
+#endif
 
 // MARK: - Crop
 
@@ -65,11 +71,11 @@ public struct ShadAvatarCrop: Sendable, Hashable {
 /// ```
 public struct ShadAvatarPhoto {
     /// The picture. `nil` falls back to initials or the placeholder icon.
-    public var image: NSImage?
+    public var image: ShadPlatformImage?
     /// Where the picture sits inside the mask.
     public var crop: ShadAvatarCrop
 
-    public init(image: NSImage? = nil, crop: ShadAvatarCrop = .fill) {
+    public init(image: ShadPlatformImage? = nil, crop: ShadAvatarCrop = .fill) {
         self.image = image
         self.crop = crop
     }
@@ -80,7 +86,7 @@ public struct ShadAvatarPhoto {
     public var isEmpty: Bool { image == nil }
 
     /// Swaps in a new picture, centred and zoomed to fill.
-    public mutating func replace(with image: NSImage) {
+    public mutating func replace(with image: ShadPlatformImage) {
         self.image = image
         self.crop = .fill
     }
@@ -109,8 +115,8 @@ public struct ShadAvatarPhoto {
 
 extension ShadAvatarPhoto: Equatable {
     /// Two photos match when they frame the very same image object the same
-    /// way. `NSImage` has no value equality, so identity is the only honest
-    /// test available.
+    /// way. Platform image types have no value equality, so identity is the
+    /// only honest test available.
     public static func == (lhs: ShadAvatarPhoto, rhs: ShadAvatarPhoto) -> Bool {
         lhs.image === rhs.image && lhs.crop == rhs.crop
     }
@@ -127,13 +133,21 @@ struct ShadAvatarPhotoLayer: View {
     var body: some View {
         if let image = photo.image {
             let extent = photo.crop.extent(for: image.size)
-            Image(nsImage: image)
+            renderedImage(image)
                 .resizable()
                 .interpolation(.high)
                 .frame(width: extent.width * side, height: extent.height * side)
                 .offset(x: photo.crop.offset.width * side, y: photo.crop.offset.height * side)
                 .frame(width: side, height: side)
         }
+    }
+
+    private func renderedImage(_ image: ShadPlatformImage) -> Image {
+#if canImport(UIKit)
+        Image(uiImage: image)
+#else
+        Image(nsImage: image)
+#endif
     }
 }
 
@@ -151,16 +165,29 @@ enum ShadImageDrop {
     /// `handler` runs on the main queue once the picture has loaded.
     static func load(
         from providers: [NSItemProvider],
-        handler: @escaping (NSImage) -> Void
+        handler: @escaping (ShadPlatformImage) -> Void
     ) -> Bool {
         for provider in providers {
             if provider.canLoadObject(ofClass: URL.self) {
                 _ = provider.loadObject(ofClass: URL.self) { url, _ in
+#if canImport(UIKit)
+                    guard let url, let image = UIImage(contentsOfFile: url.path) else { return }
+#else
                     guard let url, let image = NSImage(contentsOf: url) else { return }
+#endif
                     DispatchQueue.main.async { handler(image) }
                 }
                 return true
             }
+#if canImport(UIKit)
+            if provider.canLoadObject(ofClass: UIImage.self) {
+                _ = provider.loadObject(ofClass: UIImage.self) { object, _ in
+                    guard let image = object as? UIImage else { return }
+                    DispatchQueue.main.async { handler(image) }
+                }
+                return true
+            }
+#else
             if provider.canLoadObject(ofClass: NSImage.self) {
                 _ = provider.loadObject(ofClass: NSImage.self) { object, _ in
                     guard let image = object as? NSImage else { return }
@@ -168,6 +195,7 @@ enum ShadImageDrop {
                 }
                 return true
             }
+#endif
         }
         return false
     }
@@ -183,6 +211,7 @@ private struct ShadGrabCursor: ViewModifier {
 
     func body(content: Content) -> some View {
         content
+#if os(macOS)
             .onHover { inside in
                 if inside, isEnabled, !isPushed {
                     NSCursor.openHand.push()
@@ -198,6 +227,7 @@ private struct ShadGrabCursor: ViewModifier {
                     isPushed = false
                 }
             }
+#endif
     }
 }
 
@@ -401,7 +431,7 @@ public struct ShadAvatarEditorState {
     }
 
     /// Starts from a bare image, framed to fill.
-    public init(image: NSImage?) {
+    public init(image: ShadPlatformImage?) {
         self.init(photo: ShadAvatarPhoto(image: image))
     }
 
@@ -414,7 +444,7 @@ public struct ShadAvatarEditorState {
     /// Opens the editor on a replacement picture, centred and zoomed to fill.
     ///
     /// The replacement only reaches ``photo`` if the user saves.
-    public mutating func beginEditing(with image: NSImage) {
+    public mutating func beginEditing(with image: ShadPlatformImage) {
         draft = ShadAvatarPhoto(image: image)
         isEditing = true
     }

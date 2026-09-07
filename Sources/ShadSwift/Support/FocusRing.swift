@@ -1,5 +1,7 @@
 import SwiftUI
+#if canImport(AppKit)
 import AppKit
+#endif
 
 /// Tracks whether focus is currently being driven from the keyboard.
 ///
@@ -12,13 +14,20 @@ public final class ShadFocusVisibility: ObservableObject {
     public static let shared = ShadFocusVisibility()
 
     /// True when the last input that could move focus was a key press.
+#if os(macOS)
     @Published public private(set) var isKeyboardDriven = false
+#else
+    // iOS does not expose AppKit's event monitor. Treat focus as keyboard
+    // visible so hardware-keyboard users still receive the ring.
+    @Published public private(set) var isKeyboardDriven = true
+#endif
 
     private var monitor: Any?
 
     private init() { start() }
 
     private func start() {
+#if os(macOS)
         guard monitor == nil else { return }
         monitor = NSEvent.addLocalMonitorForEvents(
             matching: [.keyDown, .leftMouseDown, .rightMouseDown, .otherMouseDown]
@@ -34,6 +43,7 @@ public final class ShadFocusVisibility: ObservableObject {
             }
             return event
         }
+#endif
     }
 }
 

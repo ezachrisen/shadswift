@@ -1,6 +1,6 @@
 # ShadSwift
 
-A SwiftUI component library for macOS, modelled on [shadcn/ui](https://ui.shadcn.com/docs/components).
+A SwiftUI component library for iOS and macOS, modelled on [shadcn/ui](https://ui.shadcn.com/docs/components).
 
 Thirty-nine components, every documented variant, and one theme value that drives
 every colour, corner radius, type size, shadow and animation in the library.
@@ -61,6 +61,12 @@ command line needs git credentials for github.com:
 gh auth setup-git
 ```
 
+The reusable `ShadSwift` library supports iOS 17+ and macOS 14+. Its menus and
+selects use a custom window-level presentation layer on iOS and borderless
+child-window panels on macOS, keeping the same themed surfaces on both
+platforms. Use the Xcode app project below to run the gallery on iOS; the
+documentation generator runs on macOS.
+
 ### Shipping an update
 
 `from:` tracks every minor and patch release, so a consumer only has to resolve
@@ -108,6 +114,15 @@ parses into real geometry — a silent path-parser failure renders as nothing,
 which is very easy to miss by eye.
 
 ## Demo app
+
+For iOS, open **ShadSwiftDemo.xcodeproj**, select the **ShadSwiftDemo-iOS**
+scheme and an iPhone or iPad simulator, then Run. This target packages the
+shared gallery sources and the library's fonts into a real iOS app.
+Running the SwiftPM executable scheme from Package.swift does not create an
+app bundle and causes UIKit to abort at launch with a missing bundle ID.
+
+The iOS gallery uses a Components menu for navigation and adapts its examples,
+spacing and controls to the narrower phone layout.
 
 A macOS gallery app exercises every component and every theme knob — base
 colour, radius, dark mode and typeface, all live.
@@ -198,6 +213,10 @@ VStack { … }
 
 ## Notes on the macOS implementation
 
+The notes below describe the desktop-specific implementation. On iOS, the
+library uses a window-level SwiftUI popover host, native file importer APIs and
+UIKit-backed images for avatars.
+
 A few places where a faithful port needed native machinery rather than a direct
 translation of the web component:
 
@@ -224,6 +243,7 @@ translation of the web component:
 
 ## Requirements
 
+- iOS 17 or later for iOS apps
 - macOS 14 or later
 - Swift 6 toolchain (a full Xcode install — the SwiftUI macros `@State` and
   friends expand to cannot be resolved by Command Line Tools alone)

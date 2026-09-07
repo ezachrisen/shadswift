@@ -3,7 +3,9 @@ import PackageDescription
 
 let package = Package(
     name: "ShadSwift",
-    platforms: [.macOS(.v14)],
+    // Use ShadSwiftDemo.xcodeproj to run the gallery as an iOS app.
+    // SwiftPM executable products do not supply UIKit's required app bundle.
+    platforms: [.iOS(.v17), .macOS(.v14)],
     products: [
         .library(name: "ShadSwift", targets: ["ShadSwift"]),
         .executable(name: "ShadSwiftDemo", targets: ["ShadSwiftDemo"]),

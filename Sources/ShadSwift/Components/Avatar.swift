@@ -1,4 +1,9 @@
 import SwiftUI
+#if canImport(UIKit)
+import UIKit
+#elseif canImport(AppKit)
+import AppKit
+#endif
 
 /// Avatar sizes. `default` is 32pt, matching shadcn's `size-8`.
 public enum ShadAvatarSize: String, CaseIterable, Sendable {
@@ -206,11 +211,19 @@ public struct ShadAvatar: View {
                 }
             }
         case .resource(let name):
+#if canImport(UIKit)
+            if let image = UIImage(named: name) {
+                Image(uiImage: image).resizable().scaledToFill()
+            } else {
+                Color.clear
+            }
+#else
             if let nsImage = NSImage(named: name) {
                 Image(nsImage: nsImage).resizable().scaledToFill()
             } else {
                 Color.clear
             }
+#endif
         case .symbol(let icon):
             ShadRoundedRectangle(cornerRadius: cornerRadius)
                 .fill(theme.colors.secondary)

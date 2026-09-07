@@ -24,6 +24,53 @@ struct RootView: View {
     }
 
     var body: some View {
+        gallery
+            .shadTheme(themeSet, colorScheme: isDark ? .dark : .light)
+            .shadToaster(toasts, position: .bottomTrailing)
+            .environmentObject(toasts)
+    }
+
+    private var appearance: some View {
+        ThemePanel(
+            presetName: $presetName,
+            radius: $radius,
+            isDark: $isDark,
+            usesRoundedFont: $usesRoundedFont
+        )
+    }
+
+    @ViewBuilder
+    private var gallery: some View {
+#if os(iOS)
+        NavigationStack {
+            pageContent
+                .navigationTitle(page.title)
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .topBarLeading) {
+                        Menu("Components", systemImage: "sidebar.left") {
+                            ForEach(DemoPageID.groups, id: \.0) { group, pages in
+                                Section(group) {
+                                    ForEach(pages) { item in
+                                        Button(item.title) { page = item }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Button("Appearance", systemImage: "paintpalette") {
+                            showsThemePanel = true
+                        }
+                    }
+                }
+        }
+        .sheet(isPresented: $showsThemePanel) {
+            ScrollView { appearance.padding(16) }
+                .environment(\.shadDialogDismiss, { showsThemePanel = false })
+                .shadTheme(themeSet, colorScheme: isDark ? .dark : .light)
+        }
+#else
         ShadSidebarProvider(state: sidebar) {
             ShadSidebar(variant: .inset, collapsible: .icon) {
                 ShadSidebarHeader {
@@ -66,17 +113,10 @@ struct RootView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .shadTheme(themeSet, colorScheme: isDark ? .dark : .light)
-        .shadToaster(toasts, position: .bottomTrailing)
-        .environmentObject(toasts)
         .shadDialog(isPresented: $showsThemePanel) {
-            ThemePanel(
-                presetName: $presetName,
-                radius: $radius,
-                isDark: $isDark,
-                usesRoundedFont: $usesRoundedFont
-            )
+            appearance
         }
+#endif
     }
 
     private var topBar: some View {

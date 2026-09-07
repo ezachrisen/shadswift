@@ -1,6 +1,8 @@
 import SwiftUI
-import AppKit
 import UniformTypeIdentifiers
+#if canImport(AppKit)
+import AppKit
+#endif
 
 /// Input heights. `default` is 32pt, matching shadcn's `h-8`.
 public enum ShadInputSize: String, CaseIterable, Sendable {
@@ -231,6 +233,7 @@ public struct ShadFileInput: View {
     @Environment(\.isEnabled) private var isEnabled
 
     @Binding private var url: URL?
+    @State private var isFileImporterPresented = false
     private let prompt: String
     private let allowedExtensions: [String]?
     private let size: ShadInputSize
@@ -272,9 +275,19 @@ public struct ShadFileInput: View {
                 Spacer(minLength: 0)
             }
         }
+#if os(iOS)
+        .fileImporter(
+            isPresented: $isFileImporterPresented,
+            allowedContentTypes: allowedContentTypes,
+            allowsMultipleSelection: false
+        ) { result in
+            if case .success(let urls) = result { url = urls.first }
+        }
+#endif
     }
 
     private func choose() {
+#if os(macOS)
         let panel = NSOpenPanel()
         panel.allowsMultipleSelection = false
         panel.canChooseDirectories = false
@@ -284,5 +297,13 @@ public struct ShadFileInput: View {
         if panel.runModal() == .OK {
             url = panel.url
         }
+#else
+        isFileImporterPresented = true
+#endif
+    }
+
+    private var allowedContentTypes: [UTType] {
+        let types = allowedExtensions?.compactMap { UTType(filenameExtension: $0) } ?? []
+        return types.isEmpty ? [.item] : types
     }
 }

@@ -1,5 +1,9 @@
 import SwiftUI
+#if os(macOS)
 import AppKit
+#elseif os(iOS)
+import UIKit
+#endif
 
 /// Where a popover sits relative to its trigger.
 public enum ShadPopoverAlignment: Sendable, Hashable {
@@ -78,6 +82,7 @@ public struct ShadPopoverConfiguration: Sendable {
 
 // MARK: - Panel
 
+#if os(macOS)
 /// A borderless, non-activating panel. Unlike `NSPopover` it has no arrow and
 /// no system chrome, so the SwiftUI content defines the entire appearance.
 final class ShadPanel: NSPanel {
@@ -492,6 +497,228 @@ private struct ShadPopoverPresenter<PopoverContent: View>: ViewModifier {
     }
 }
 
+#else
+
+extension View {
+    /// Presents `content` in the library's own anchored surface on iOS.
+    /// Using an in-view overlay keeps menus out of the system liquid-glass
+    /// popover and gives option lists enough width for their labels.
+    public func shadPopover<Content: View>(
+        isPresented: Binding<Bool>,
+        configuration: ShadPopoverConfiguration = ShadPopoverConfiguration(),
+        onKey: @escaping (ShadPopoverKey) -> Bool = { _ in false },
+        @ViewBuilder content: @escaping () -> Content
+    ) -> some View {
+        modifier(ShadPopoverPresenter(
+            isPresented: isPresented,
+            configuration: configuration,
+            onKey: onKey,
+            popoverContent: content
+        ))
+    }
+}
+
+private struct ShadPopoverPresenter<PopoverContent: View>: ViewModifier {
+    @Binding var isPresented: Bool
+    let configuration: ShadPopoverConfiguration
+    let onKey: (ShadPopoverKey) -> Bool
+    @ViewBuilder let popoverContent: () -> PopoverContent
+    @Environment(\.shadTheme) private var theme
+    @Environment(\.shadStaticRendering) private var isStatic
+
+    func body(content: Content) -> some View {
+        if isStatic {
+            content
+        } else {
+            content.background(
+                ShadIOSPopoverBridge(
+                    isPresented: $isPresented,
+                    configuration: configuration,
+                    theme: theme,
+                    content: popoverContent
+                )
+                .allowsHitTesting(false)
+            )
+        }
+    }
+}
+
+private struct ShadIOSPopoverBridge<PopoverContent: View>: UIViewRepresentable {
+    @Binding var isPresented: Bool
+    let configuration: ShadPopoverConfiguration
+    let theme: ShadTheme
+    @ViewBuilder let content: () -> PopoverContent
+
+    func makeUIView(context: Context) -> ShadIOSAnchorView {
+        ShadIOSAnchorView()
+    }
+
+    func updateUIView(_ uiView: ShadIOSAnchorView, context: Context) {
+        let controller = context.coordinator.controller
+        controller.onDismiss = { isPresented = false }
+        let hosted = AnyView(content().shadTheme(theme))
+
+        if isPresented {
+            controller.present(
+                content: hosted,
+                from: uiView,
+                configuration: configuration
+            )
+        } else {
+            controller.dismiss()
+        }
+    }
+
+    func makeCoordinator() -> Coordinator { Coordinator() }
+
+    @MainActor
+    final class Coordinator {
+        let controller = ShadIOSPopoverController()
+    }
+
+    static func dismantleUIView(_ uiView: ShadIOSAnchorView, coordinator: Coordinator) {
+        coordinator.controller.dismiss()
+    }
+}
+
+private final class ShadIOSAnchorView: UIView {
+    override func point(inside point: CGPoint, with event: UIEvent?) -> Bool { false }
+}
+
+@MainActor
+private final class ShadIOSPopoverController: NSObject {
+    private var backdrop: UIView?
+    private var hostingController: UIHostingController<AnyView>?
+    private weak var anchorView: UIView?
+    private var configuration = ShadPopoverConfiguration()
+
+    var onDismiss: () -> Void = {}
+
+    func present(
+        content: AnyView,
+        from anchor: UIView,
+        configuration: ShadPopoverConfiguration,
+        remainingAttempts: Int = 20
+    ) {
+        anchorView = anchor
+        self.configuration = configuration
+
+        guard let window = anchor.window else {
+            guard remainingAttempts > 0 else { return }
+            DispatchQueue.main.async { [weak self] in
+                self?.present(
+                    content: content,
+                    from: anchor,
+                    configuration: configuration,
+                    remainingAttempts: remainingAttempts - 1
+                )
+            }
+            return
+        }
+
+        let anchorRect = anchor.convert(anchor.bounds, to: window)
+        let availableWidth = max(1, window.bounds.width - 32)
+        let panelWidth = min(
+            max(configuration.matchesTriggerWidth ? anchorRect.width : 0, 300),
+            availableWidth
+        )
+        let root = AnyView(
+            content
+                .frame(width: panelWidth, alignment: .leading)
+                .frame(maxHeight: configuration.maxHeight, alignment: .top)
+                .fixedSize(horizontal: false, vertical: true)
+        )
+
+        let host: UIHostingController<AnyView>
+        if let hostingController {
+            host = hostingController
+            host.rootView = root
+        } else {
+            host = UIHostingController(rootView: root)
+            host.view.backgroundColor = .clear
+            hostingController = host
+        }
+
+        let layer: UIView
+        if let backdrop {
+            layer = backdrop
+            layer.frame = window.bounds
+        } else {
+            let newLayer = UIView(frame: window.bounds)
+            newLayer.backgroundColor = .clear
+            newLayer.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+            let recognizer = UITapGestureRecognizer(target: self, action: #selector(backgroundTapped(_:)))
+            recognizer.cancelsTouchesInView = false
+            newLayer.addGestureRecognizer(recognizer)
+            window.addSubview(newLayer)
+            newLayer.addSubview(host.view)
+            backdrop = newLayer
+            layer = newLayer
+        }
+
+        let fitting = host.sizeThatFits(
+            in: CGSize(width: panelWidth, height: configuration.maxHeight)
+        )
+        let panelHeight = min(max(fitting.height, 1), configuration.maxHeight)
+        host.view.frame = placement(
+            anchor: anchorRect,
+            panelSize: CGSize(width: panelWidth, height: panelHeight),
+            window: window,
+            configuration: configuration
+        )
+        layer.bringSubviewToFront(host.view)
+        window.bringSubviewToFront(layer)
+    }
+
+    func dismiss() {
+        hostingController?.view.removeFromSuperview()
+        backdrop?.removeFromSuperview()
+        hostingController = nil
+        backdrop = nil
+        anchorView = nil
+    }
+
+    @objc private func backgroundTapped(_ recognizer: UITapGestureRecognizer) {
+        guard configuration.dismissesOnOutsideClick,
+              let backdrop,
+              let panel = hostingController?.view else { return }
+        let point = recognizer.location(in: backdrop)
+        guard !panel.frame.contains(point) else { return }
+        onDismiss()
+    }
+
+    private func placement(
+        anchor: CGRect,
+        panelSize: CGSize,
+        window: UIWindow,
+        configuration: ShadPopoverConfiguration
+    ) -> CGRect {
+        let inset: CGFloat = 8
+        let safeTop = window.safeAreaInsets.top + inset
+        let safeBottom = window.bounds.height - window.safeAreaInsets.bottom - inset
+
+        var x: CGFloat
+        switch configuration.alignment {
+        case .bottomTrailing, .topTrailing, .trailingTop, .trailingBottom:
+            x = anchor.maxX - panelSize.width
+        case .bottomCenter, .topCenter:
+            x = anchor.midX - panelSize.width / 2
+        default:
+            x = anchor.minX
+        }
+
+        let below = anchor.maxY + configuration.gap
+        let above = anchor.minY - configuration.gap - panelSize.height
+        let y = below + panelSize.height <= safeBottom ? below : above
+
+        x = min(max(x, inset), max(inset, window.bounds.width - panelSize.width - inset))
+        let clampedY = min(max(y, safeTop), max(safeTop, safeBottom - panelSize.height))
+        return CGRect(origin: CGPoint(x: x, y: clampedY), size: panelSize)
+    }
+}
+
+#endif
+
 /// The standard popover surface: rounded, bordered, elevated. Every menu,
 /// select and combobox panel in the library is built on it.
 public struct ShadPopoverSurface<Content: View>: View {
@@ -507,6 +734,7 @@ public struct ShadPopoverSurface<Content: View>: View {
     public var body: some View {
         content
             .padding(padding)
+            .frame(maxWidth: .infinity, alignment: .leading)
             .background(
                 ShadRoundedRectangle(cornerRadius: theme.radius.lg)
                     .fill(theme.colors.popover)

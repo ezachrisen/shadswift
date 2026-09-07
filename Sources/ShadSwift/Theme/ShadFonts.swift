@@ -1,6 +1,9 @@
 import SwiftUI
-import AppKit
+import Foundation
 import CoreText
+#if canImport(UIKit)
+import UIKit
+#endif
 
 /// Registers the type families the library ships with.
 ///
@@ -88,6 +91,12 @@ public enum ShadFonts {
     /// True once the family is resolvable — useful for tests and previews.
     public static func isAvailable(_ family: String) -> Bool {
         registerBundledFonts()
+#if canImport(UIKit)
+        return UIFont.familyNames.contains(family)
+#elseif canImport(AppKit)
         return NSFontManager.shared.availableFontFamilies.contains(family)
+#else
+        return false
+#endif
     }
 }
