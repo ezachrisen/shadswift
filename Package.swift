@@ -27,5 +27,10 @@ let package = Package(
             dependencies: ["ShadSwift"],
             swiftSettings: [.swiftLanguageMode(.v5)]
         ),
+        .testTarget(
+            name: "ShadSwiftTests",
+            dependencies: ["ShadSwift"],
+            swiftSettings: [.swiftLanguageMode(.v5)]
+        ),
     ]
 )

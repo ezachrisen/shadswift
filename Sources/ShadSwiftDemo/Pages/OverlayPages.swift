@@ -366,7 +366,7 @@ struct DialogPage: View {
                 ShadDialogBody(maxHeight: 260) {
                     ForEach(0..<10, id: \.self) { index in
                         VStack(alignment: .leading, spacing: 4) {
-                            Text("Section \(index + 1)").font(.system(size: 13, weight: .semibold))
+                            Text("Section \(index + 1)").demoFont(13, weight: .semibold)
                             Text("Nothing in these terms limits the rights you already have. This paragraph exists so the dialog has something to scroll.")
                                 .foregroundStyle(.secondary)
                         }

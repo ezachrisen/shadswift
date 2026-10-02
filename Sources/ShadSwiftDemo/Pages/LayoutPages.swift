@@ -7,6 +7,9 @@ struct SidebarPage: View {
     @State private var variant: ShadSidebarVariant = .sidebar
     @State private var collapsible: ShadSidebarCollapsible = .icon
     @State private var side: ShadSidebarSide = .left
+    #if os(macOS)
+    @Binding var backgroundStyle: ShadSidebarBackgroundStyle
+    #endif
     @State private var active = "inbox"
     @State private var workspace = "Acme Inc."
     @State private var lastAction = "—"
@@ -15,7 +18,7 @@ struct SidebarPage: View {
 
     var body: some View {
         DemoPage(title: "Sidebar", subtitle: "A composable, themeable and customisable sidebar.") {
-            DemoSection("Configuration", description: "The gallery's own navigation is a Sidebar with variant: .inset.") {
+            DemoSection("Configuration", description: "The macOS gallery uses the flush sidebar variant, extending to the window edges.") {
                 DemoRow(spacing: 16) {
                     DemoLabeled(label: "variant", width: 180) {
                         ShadSelect(selection: Binding(
@@ -46,15 +49,21 @@ struct SidebarPage: View {
                             ShadSelectOption("right", value: ShadSidebarSide.right),
                         ])
                     }
+                    #if os(macOS)
+                    DemoLabeled(label: "background", width: 180) {
+                        ShadSelect(selection: Binding(
+                            get: { Optional(backgroundStyle) },
+                            set: { backgroundStyle = $0 ?? .solid }
+                        ), options: ShadSidebarBackgroundStyle.allCases.map {
+                            ShadSelectOption($0.rawValue, value: $0)
+                        })
+                    }
+                    #endif
                 }
             }
 
             DemoSection("Live example", description: "Header, groups, badges, sub-menus, footer, trigger and rail.") {
-                ShadSidebarProvider(state: demoState) {
-                    if side == .left { sidebar }
-                    inset
-                    if side == .right { sidebar }
-                }
+                sidebarPreview
                 .frame(height: 420)
                 .clipShape(ShadRoundedRectangle(cornerRadius: 12))
                 .overlay(
@@ -63,6 +72,25 @@ struct SidebarPage: View {
                 )
             }
         }
+    }
+
+    private var sidebarPreview: some View {
+        #if os(macOS)
+        ShadSidebarProvider(state: demoState, backgroundStyle: backgroundStyle) {
+            sidebarLayout
+        }
+        #else
+        ShadSidebarProvider(state: demoState) {
+            sidebarLayout
+        }
+        #endif
+    }
+
+    @ViewBuilder
+    private var sidebarLayout: some View {
+        if side == .left { sidebar }
+        inset
+        if side == .right { sidebar }
     }
 
     private var sidebar: some View {
@@ -181,7 +209,7 @@ struct SidebarPage: View {
                 ShadSidebarTrigger()
                 ShadSeparator(.vertical).frame(height: 16)
                 Text(active.capitalized)
-                    .font(.system(size: 13, weight: .medium))
+                    .demoFont(13, weight: .medium)
                 Spacer()
                 ShadBadge("menu: \(lastAction)", variant: .secondary)
                 ShadBadge(demoState.state, variant: .outline)
@@ -191,9 +219,9 @@ struct SidebarPage: View {
             ShadSeparator()
             VStack(alignment: .leading, spacing: 12) {
                 Text("Main content")
-                    .font(.system(size: 15, weight: .semibold))
+                    .demoFont(15, weight: .semibold)
                 Text("The sidebar collapses to \(collapsible.rawValue). Click the rail on its edge, or the trigger above.")
-                    .font(.system(size: 12))
+                    .demoFont(12)
                     .foregroundStyle(.secondary)
                 DemoRow {
                     ShadButton("Primary", size: .sm) {}
@@ -268,7 +296,7 @@ struct ThemingPage: View {
     @Binding var presetName: String
     @Binding var radius: Double
     @Binding var isDark: Bool
-    @Binding var usesRoundedFont: Bool
+    @Binding var font: DemoFont
     @Environment(\.shadTheme) private var theme
 
     private let swatches: [(String, KeyPath<ShadColors, Color>)] = [
@@ -317,7 +345,9 @@ struct ThemingPage: View {
             DemoSection("Appearance") {
                 DemoRow(spacing: 24) {
                     ShadSwitch("Dark mode", isOn: $isDark)
-                    ShadSwitch("Rounded typeface", isOn: $usesRoundedFont)
+                    DemoLabeled(label: "Default font", width: 220) {
+                        DemoFontPicker(selection: $font)
+                    }
                 }
             }
 

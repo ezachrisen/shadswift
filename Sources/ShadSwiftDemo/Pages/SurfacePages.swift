@@ -78,9 +78,9 @@ struct CardPage: View {
                             VStack(alignment: .leading, spacing: 14) {
                                 ForEach(Self.terms, id: \.0) { title, body in
                                     VStack(alignment: .leading, spacing: 4) {
-                                        Text(title).font(.system(size: 13, weight: .semibold))
+                                        Text(title).demoFont(13, weight: .semibold)
                                         Text(body)
-                                            .font(.system(size: 13))
+                                            .demoFont(13)
                                             .foregroundStyle(.secondary)
                                             .fixedSize(horizontal: false, vertical: true)
                                     }
@@ -137,9 +137,9 @@ struct CardPage: View {
                                     .frame(width: 64, height: 64)
                                 VStack(alignment: .leading, spacing: 4) {
                                     Text("Sunset over Lofoten")
-                                        .font(.system(size: 14, weight: .semibold))
+                                        .demoFont(14, weight: .semibold)
                                     Text("A short photo essay")
-                                        .font(.system(size: 13))
+                                        .demoFont(13)
                                         .foregroundStyle(.secondary)
                                 }
                                 Spacer(minLength: 0)

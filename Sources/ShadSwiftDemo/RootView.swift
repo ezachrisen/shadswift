@@ -6,7 +6,10 @@ struct RootView: View {
     @State private var presetName = DemoLaunchOptions.preset
     @State private var radius: Double = DemoLaunchOptions.radius
     @State private var isDark = DemoLaunchOptions.isDark
-    @State private var usesRoundedFont = false
+    @State private var font: DemoFont = .geist
+    #if os(macOS)
+    @State private var sidebarBackgroundStyle: ShadSidebarBackgroundStyle = .solid
+    #endif
     @State private var showsThemePanel = DemoLaunchOptions.opensDialog
 
     @StateObject private var sidebar = ShadSidebarState()
@@ -16,7 +19,7 @@ struct RootView: View {
         let base = ShadThemeSet.presets.first { $0.name == presetName }?.theme ?? .default
         return base
             .radius(CGFloat(radius))
-            .typography(ShadTypography(design: usesRoundedFont ? .rounded : .default))
+            .typography(font.typography)
     }
 
     private var theme: ShadTheme {
@@ -25,18 +28,24 @@ struct RootView: View {
 
     var body: some View {
         gallery
+            .font(theme.font(theme.typography.sm))
             .shadTheme(themeSet, colorScheme: isDark ? .dark : .light)
             .shadToaster(toasts, position: .bottomTrailing)
             .environmentObject(toasts)
     }
 
     private var appearance: some View {
+        #if os(macOS)
         ThemePanel(
             presetName: $presetName,
             radius: $radius,
             isDark: $isDark,
-            usesRoundedFont: $usesRoundedFont
+            font: $font,
+            sidebarBackgroundStyle: $sidebarBackgroundStyle
         )
+        #else
+        ThemePanel(presetName: $presetName, radius: $radius, isDark: $isDark, font: $font)
+        #endif
     }
 
     @ViewBuilder
@@ -67,17 +76,30 @@ struct RootView: View {
         }
         .sheet(isPresented: $showsThemePanel) {
             ScrollView { appearance.padding(16) }
+                .font(theme.font(theme.typography.sm))
                 .environment(\.shadDialogDismiss, { showsThemePanel = false })
                 .shadTheme(themeSet, colorScheme: isDark ? .dark : .light)
         }
 #else
-        ShadSidebarProvider(state: sidebar) {
-            ShadSidebar(variant: .inset, collapsible: .icon) {
+        GeometryReader { geometry in
+            macGallery(titlebarHeight: geometry.safeAreaInsets.top)
+                .ignoresSafeArea(.container, edges: .top)
+        }
+#endif
+    }
+
+#if os(macOS)
+    private func macGallery(titlebarHeight: CGFloat) -> some View {
+        ShadSidebarProvider(state: sidebar, backgroundStyle: sidebarBackgroundStyle) {
+            ShadSidebar(variant: .sidebar, collapsible: .icon) {
                 ShadSidebarHeader {
                     ShadSidebarMenu {
                         ShadSidebarMenuButton("ShadSwift", icon: .sparkles, size: .lg) {}
                     }
                 }
+                // The surface reaches the window edge; controls stay below
+                // the traffic lights, including when the sidebar is collapsed.
+                .padding(.top, titlebarHeight)
                 ShadSidebarContent {
                     ForEach(DemoPageID.groups, id: \.0) { group, pages in
                         ShadSidebarGroup(group) {
@@ -106,8 +128,9 @@ struct RootView: View {
                 }
             }
 
-            ShadSidebarInset(variant: .inset) {
+            ShadSidebarInset(variant: .sidebar) {
                 topBar
+                    .padding(.top, titlebarHeight)
                 ShadSeparator()
                 pageContent
             }
@@ -116,8 +139,8 @@ struct RootView: View {
         .shadDialog(isPresented: $showsThemePanel) {
             appearance
         }
-#endif
     }
+#endif
 
     private var topBar: some View {
         HStack(spacing: 12) {
@@ -170,7 +193,12 @@ struct RootView: View {
         case .dropdown: DropdownPage()
         case .dialog: DialogPage()
         case .toast: ToastPage()
-        case .sidebar: SidebarPage()
+        case .sidebar:
+            #if os(macOS)
+            SidebarPage(backgroundStyle: $sidebarBackgroundStyle)
+            #else
+            SidebarPage()
+            #endif
         case .breadcrumb: BreadcrumbPage()
         case .table: TablePage()
         case .pagination: PaginationPage()
@@ -178,7 +206,7 @@ struct RootView: View {
         case .bubble: BubblePage()
         case .marker: MarkerPage()
         case .messageScroller: MessageScrollerPage()
-        case .theming: ThemingPage(presetName: $presetName, radius: $radius, isDark: $isDark, usesRoundedFont: $usesRoundedFont)
+        case .theming: ThemingPage(presetName: $presetName, radius: $radius, isDark: $isDark, font: $font)
         }
     }
 }
@@ -189,7 +217,10 @@ struct ThemePanel: View {
     @Binding var presetName: String
     @Binding var radius: Double
     @Binding var isDark: Bool
-    @Binding var usesRoundedFont: Bool
+    @Binding var font: DemoFont
+    #if os(macOS)
+    @Binding var sidebarBackgroundStyle: ShadSidebarBackgroundStyle
+    #endif
 
     private var presetOptions: [ShadSelectOption<String>] {
         ShadThemeSet.presets.map { ShadSelectOption($0.name.capitalized, value: $0.name) }
@@ -227,13 +258,27 @@ struct ThemePanel: View {
                     ShadSwitch(isOn: $isDark)
                 }
 
-                ShadField(orientation: .horizontal) {
-                    ShadFieldContent {
-                        ShadFieldTitle("Rounded typeface")
-                        ShadFieldDescription("Swaps the system font design.")
-                    }
-                    ShadSwitch(isOn: $usesRoundedFont)
+                ShadField {
+                    ShadFieldLabel("Default font")
+                    DemoFontPicker(selection: $font)
+                    ShadFieldDescription("Used throughout the gallery and component examples.")
                 }
+
+                #if os(macOS)
+                ShadField {
+                    ShadFieldLabel("Sidebar background")
+                    ShadSelect(
+                        selection: Binding(
+                            get: { Optional(sidebarBackgroundStyle) },
+                            set: { sidebarBackgroundStyle = $0 ?? .solid }
+                        ),
+                        options: ShadSidebarBackgroundStyle.allCases.map {
+                            ShadSelectOption($0.rawValue.capitalized, value: $0)
+                        }
+                    )
+                    ShadFieldDescription("Frosted and glass styles reveal the desktop and windows behind the sidebar.")
+                }
+                #endif
             }
 
             ShadDialogFooter {

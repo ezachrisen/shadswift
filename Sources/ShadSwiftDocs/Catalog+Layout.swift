@@ -258,7 +258,7 @@ extension DocCatalog {
             summary: "A composable, themeable and customisable sidebar.",
             group: "Layout",
             anatomy: #"""
-            ShadSidebarProvider(state:)
+            ShadSidebarProvider(state:backgroundStyle:)
             ├── ShadSidebar(side:variant:collapsible:)
             │   ├── ShadSidebarHeader
             │   ├── ShadSidebarContent
@@ -364,12 +364,34 @@ extension DocCatalog {
                 ) {
                     DocSidebarPreview(variant: .sidebar, collapsible: .icon, isOpen: false)
                 },
+                DocExample(
+                    "Translucent backgrounds (macOS)",
+                    description: "Both styles blur the desktop and other windows behind the sidebar. Choose translucent for native sidebar frosting, or glass to add Liquid Glass on macOS 26+. Glass falls back to the native frosted material on older systems. Try the background selector in the gallery for a live preview.",
+                    code: #"""
+                    ShadSidebarProvider(state: sidebar, backgroundStyle: .glass) {
+                        ShadSidebar(variant: .floating) {
+                            ShadSidebarContent {
+                                ShadSidebarMenuButton("Inbox", icon: .mail) {}
+                            }
+                        }
+                        ShadSidebarInset(variant: .floating) {
+                            Text("Main content")
+                        }
+                    }
+                    """#
+                ),
             ],
             notes: [
                 "Place ShadSidebar before ShadSidebarInset for a left sidebar and after it for a right one; the side prop controls the chrome.",
-                "The gallery app's own navigation is a ShadSidebar with variant: .inset.",
+                "The macOS gallery's own navigation uses variant: .sidebar, extending to the window edges with its controls below the title bar.",
+                "backgroundStyle is available only on macOS and applies to all sidebar variants. AppKit samples the desktop and other windows using behind-window blending; no app-supplied backdrop is required. ShadSidebarInset keeps the main content opaque.",
+                "Reduce Transparency restores solid themed surfaces. Liquid Glass requires the Xcode 26 SDK or newer; older SDKs use the translucent fallback.",
             ],
             api: [
+                DocAPI("ShadSidebarProvider", [
+                    DocProperty("state", "ShadSidebarState", "Shared open/collapsed state."),
+                    DocProperty("backgroundStyle", "ShadSidebarBackgroundStyle", default: ".solid", "macOS only: solid, translucent or glass. Applied to the sidebar surface while keeping text and controls opaque."),
+                ]),
                 DocAPI("ShadSidebar", [
                     DocProperty("side", "ShadSidebarSide", default: ".left", "left or right; controls the border and rail edge."),
                     DocProperty("variant", "ShadSidebarVariant", default: ".sidebar", "sidebar, floating or inset."),

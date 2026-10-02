@@ -67,6 +67,35 @@ child-window panels on macOS, keeping the same themed surfaces on both
 platforms. Use the Xcode app project below to run the gallery on iOS; the
 documentation generator runs on macOS.
 
+### Translucent sidebars (macOS only)
+
+On macOS, set `backgroundStyle` on the provider to opt into a frosted or glass surface:
+
+```swift
+ShadSidebarProvider(state: sidebarState, backgroundStyle: .glass) {
+    ShadSidebar {
+        ShadSidebarContent {
+            ShadSidebarMenuButton("Inbox", icon: .mail) {}
+        }
+    }
+    ShadSidebarInset {
+        Text("Main content")
+    }
+}
+```
+
+The default `.solid` preserves the existing appearance. `.translucent` uses a
+native sidebar material that blurs the desktop and other windows behind the
+sidebar. `.glass` adds Liquid Glass on macOS 26+ when built with Xcode 26 or
+newer, and falls back to the native frosted material otherwise. All three
+sidebar variants support these styles, and Reduce Transparency restores solid
+themed surfaces. Text and controls stay opaque.
+
+AppKit captures the backdrop from behind the window; no gradient or other
+app-supplied background is needed. The main content stays opaque. The gallery's
+Theme dialog and Sidebar page share a live background selector on macOS. The
+style API and selector are not available on iOS.
+
 ### Shipping an update
 
 `from:` tracks every minor and patch release, so a consumer only has to resolve
@@ -126,6 +155,10 @@ spacing and controls to the narrower phone layout.
 
 A macOS gallery app exercises every component and every theme knob — base
 colour, radius, dark mode and typeface, all live.
+
+Open **Theme** (or **Appearance** on iOS) to choose the demo's default font:
+Geist, System, Rounded, Serif or Monospaced. The macOS dialog also offers Solid,
+Translucent and Glass sidebar backgrounds, synchronized with the Sidebar page.
 
 ```bash
 ./Scripts/build-app.sh

@@ -19,6 +19,29 @@ public enum ShadSidebarVariant: String, CaseIterable, Sendable {
     case inset
 }
 
+#if os(macOS)
+/// The macOS sidebar surface, selected on ``ShadSidebarProvider``.
+public enum ShadSidebarBackgroundStyle: String, CaseIterable, Sendable {
+    /// The themed background, preserving the transparent rail for `.inset`.
+    case solid
+    /// A native frosted sidebar that blends the desktop and windows behind it.
+    case translucent
+    /// Liquid Glass on macOS 26+, with a translucent fallback on older systems.
+    case glass
+}
+
+private struct ShadSidebarBackgroundStyleKey: EnvironmentKey {
+    static let defaultValue = ShadSidebarBackgroundStyle.solid
+}
+
+extension EnvironmentValues {
+    fileprivate var shadSidebarBackgroundStyle: ShadSidebarBackgroundStyle {
+        get { self[ShadSidebarBackgroundStyleKey.self] }
+        set { self[ShadSidebarBackgroundStyleKey.self] = newValue }
+    }
+}
+#endif
+
 /// What happens when the sidebar collapses.
 public enum ShadSidebarCollapsible: String, CaseIterable, Sendable {
     /// Slides fully off-canvas.
@@ -117,6 +140,10 @@ extension EnvironmentValues {
 /// ```
 public struct ShadSidebarProvider<Content: View>: View {
     @Environment(\.shadTheme) private var theme
+    #if os(macOS)
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
+    private let backgroundStyle: ShadSidebarBackgroundStyle
+    #endif
     @ObservedObject private var state: ShadSidebarState
     @State private var hoveredRow: UUID?
     private let content: Content
@@ -124,13 +151,34 @@ public struct ShadSidebarProvider<Content: View>: View {
     public init(state: ShadSidebarState, @ViewBuilder content: () -> Content) {
         self.state = state
         self.content = content()
+        #if os(macOS)
+        self.backgroundStyle = .solid
+        #endif
     }
+
+    #if os(macOS)
+    /// Translucent styles use a native behind-window backdrop. Main content
+    /// keeps its themed background; no app-supplied backdrop is required.
+    /// Reduce Transparency restores solid surfaces automatically.
+    public init(
+        state: ShadSidebarState,
+        backgroundStyle: ShadSidebarBackgroundStyle,
+        @ViewBuilder content: () -> Content
+    ) {
+        self.state = state
+        self.backgroundStyle = backgroundStyle
+        self.content = content()
+    }
+    #endif
 
     public var body: some View {
         HStack(spacing: 0) {
             content
         }
         .environment(\.shadSidebar, state)
+        #if os(macOS)
+        .environment(\.shadSidebarBackgroundStyle, backgroundStyle)
+        #endif
         .environment(\.shadSidebarHoveredRow, hoveredRow)
         .environment(\.shadSidebarSetHoveredRow) { id, inside in
             if inside {
@@ -141,7 +189,11 @@ public struct ShadSidebarProvider<Content: View>: View {
                 hoveredRow = nil
             }
         }
+        #if os(macOS)
+        .background(backgroundStyle == .solid || reduceTransparency ? theme.colors.background : Color.clear)
+        #else
         .background(theme.colors.background)
+        #endif
     }
 }
 
@@ -149,6 +201,10 @@ public struct ShadSidebarProvider<Content: View>: View {
 public struct ShadSidebar<Content: View>: View {
     @Environment(\.shadTheme) private var theme
     @Environment(\.shadSidebar) private var state
+    #if os(macOS)
+    @Environment(\.shadSidebarBackgroundStyle) private var backgroundStyle
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
+    #endif
 
     private let side: ShadSidebarSide
     private let variant: ShadSidebarVariant
@@ -179,13 +235,60 @@ public struct ShadSidebar<Content: View>: View {
         }
     }
 
+    #if os(macOS)
+    private var surfaceShape: ShadRoundedRectangle {
+        ShadRoundedRectangle(cornerRadius: variant == .sidebar ? 0 : theme.radius.lg)
+    }
+
+    private var nativeBackdrop: some View {
+        ShadSidebarBackdrop()
+            .clipShape(surfaceShape)
+    }
+
+    @ViewBuilder
+    private var surface: some View {
+        if backgroundStyle == .solid {
+            surfaceShape.fill(variant == .inset ? Color.clear : theme.colors.sidebar)
+        } else if reduceTransparency {
+            surfaceShape.fill(theme.colors.sidebar)
+        } else if backgroundStyle == .glass {
+            // Older SDKs still build the package and use the material fallback.
+            #if compiler(>=6.2)
+            if #available(macOS 26.0, *) {
+                nativeBackdrop
+                    .overlay {
+                        Color.clear.glassEffect(.clear, in: surfaceShape)
+                    }
+            } else {
+                nativeBackdrop
+            }
+            #else
+            nativeBackdrop
+            #endif
+        } else {
+            nativeBackdrop
+        }
+    }
+    #endif
+
     public var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             content
         }
         .frame(width: max(0, width - (variant == .sidebar ? 0 : 16)), alignment: .leading)
         .frame(maxHeight: .infinity, alignment: .top)
+        #if os(macOS)
+        .shadIf(variant != .sidebar && (variant == .floating || backgroundStyle != .solid)) { view in
+            view.clipShape(surfaceShape)
+        }
+        .background {
+            surface
+                .shadIf(variant == .floating) { $0.shadShadow(theme.shadows.sm) }
+                .allowsHitTesting(false)
+        }
+        #else
         .background(variant == .inset ? Color.clear : theme.colors.sidebar)
+        #endif
         .overlay(alignment: side == .left ? .trailing : .leading) {
             if variant == .sidebar {
                 ShadSeparator(.vertical, color: theme.colors.sidebarBorder)
@@ -193,12 +296,14 @@ public struct ShadSidebar<Content: View>: View {
         }
         .shadIf(variant == .floating) { view in
             view
+                #if !os(macOS)
                 .clipShape(ShadRoundedRectangle(cornerRadius: theme.radius.lg))
                 .background(
                     ShadRoundedRectangle(cornerRadius: theme.radius.lg)
                         .fill(theme.colors.sidebar)
                         .shadShadow(theme.shadows.sm)
                 )
+                #endif
                 .overlay(
                     ShadRoundedRectangle(cornerRadius: theme.radius.lg)
                         .strokeBorder(theme.colors.sidebarBorder, lineWidth: theme.borderWidth)
