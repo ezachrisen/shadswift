@@ -412,6 +412,32 @@ private struct ShadSidebarRowKey: EnvironmentKey {
     static let defaultValue = false
 }
 
+/// Lets the enclosing row draw one selection background, including its actions.
+private struct ShadSidebarActivePreferenceKey: PreferenceKey {
+    static let defaultValue = false
+
+    static func reduce(value: inout Bool, nextValue: () -> Bool) {
+        value = nextValue() || value
+    }
+}
+
+/// Add foreground contrast so selection stays visible even when the theme's
+/// accent and sidebar background are nearly identical, especially in light mode.
+private struct ShadSidebarRowBackground: View {
+    @Environment(\.shadTheme) private var theme
+    let isActive: Bool
+    let isHovering: Bool
+
+    var body: some View {
+        ShadRoundedRectangle(cornerRadius: theme.radius.md)
+            .fill(theme.colors.sidebarAccent.opacity(isHovering ? 1 : isActive ? 0.75 : 0))
+            .overlay {
+                ShadRoundedRectangle(cornerRadius: theme.radius.md)
+                    .fill(theme.colors.sidebarForeground.opacity(isActive ? (isHovering ? 0.10 : 0.08) : 0))
+            }
+    }
+}
+
 extension EnvironmentValues {
     /// True for views inside a ``ShadSidebarMenuItem``, which owns the row's
     /// hover highlight so the button and its action never fight over it.
@@ -423,7 +449,7 @@ extension EnvironmentValues {
 
 /// One row of a sidebar menu.
 ///
-/// The row — not the button inside it — owns the hover highlight, so moving
+/// The row — not the button inside it — owns the selection and hover highlight, so moving
 /// the pointer between the label and a trailing action never flickers, and the
 /// whole row lights up as one piece.
 public struct ShadSidebarMenuItem<Content: View>: View {
@@ -441,10 +467,9 @@ public struct ShadSidebarMenuItem<Content: View>: View {
     public var body: some View {
         HStack(spacing: 2) { content }
             .padding(.horizontal, 2)
-            .background(
-                ShadRoundedRectangle(cornerRadius: theme.radius.md)
-                    .fill(isHovering ? theme.colors.sidebarAccent : .clear)
-            )
+            .backgroundPreferenceValue(ShadSidebarActivePreferenceKey.self) { isActive in
+                ShadSidebarRowBackground(isActive: isActive, isHovering: isHovering)
+            }
             .contentShape(Rectangle())
             .environment(\.shadSidebarInRow, true)
             .onHover { setHovered(id, $0) }
@@ -496,13 +521,6 @@ public struct ShadSidebarMenuButton<Trailing: View>: View {
 
     @Environment(\.shadSidebarInRow) private var isInRow
 
-    /// The active row is marked by weight and colour, not by a fill — a filled
-    /// selection reads as a permanent hover and fights the real one.
-    private var background: Color {
-        guard !isInRow else { return .clear }
-        return isHovering ? theme.colors.sidebarAccent : .clear
-    }
-
     public var body: some View {
         Button(action: action) {
             HStack(spacing: 8) {
@@ -512,7 +530,7 @@ public struct ShadSidebarMenuButton<Trailing: View>: View {
                 }
                 if !isIconOnly {
                     Text(title)
-                        .font(theme.font(theme.typography.sm, isActive ? theme.typography.medium : theme.typography.regular))
+                        .font(theme.font(theme.typography.sm, theme.typography.regular))
                         .lineLimit(1)
                     Spacer(minLength: 0)
                     trailing
@@ -522,12 +540,15 @@ public struct ShadSidebarMenuButton<Trailing: View>: View {
             .padding(.horizontal, 8)
             .frame(height: size.height)
             .frame(maxWidth: .infinity, alignment: isIconOnly ? .center : .leading)
-            .background(
-                ShadRoundedRectangle(cornerRadius: theme.radius.md).fill(background)
-            )
+            .background {
+                if !isInRow {
+                    ShadSidebarRowBackground(isActive: isActive, isHovering: isHovering)
+                }
+            }
             .contentShape(Rectangle())
         }
         .buttonStyle(.shadPlain)
+        .preference(key: ShadSidebarActivePreferenceKey.self, value: isInRow && isActive)
         .focusEffectDisabled()
         .shadHover($isHovering, enabled: isEnabled)
         .shadPointerCursor(isEnabled)
@@ -666,14 +687,13 @@ public struct ShadSidebarMenuSubButton: View {
     public var body: some View {
         Button(action: action) {
             Text(title)
-                .font(theme.font(theme.typography.sm, isActive ? theme.typography.medium : theme.typography.regular))
+                .font(theme.font(theme.typography.sm, theme.typography.regular))
                 .foregroundStyle(isActive ? theme.colors.sidebarAccentForeground : theme.colors.sidebarForeground.opacity(0.8))
                 .padding(.horizontal, 8)
                 .frame(height: 28)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .background(
-                    ShadRoundedRectangle(cornerRadius: theme.radius.md)
-                        .fill(isHovering ? theme.colors.sidebarAccent : .clear)
+                    ShadSidebarRowBackground(isActive: isActive, isHovering: isHovering)
                 )
                 .contentShape(Rectangle())
         }

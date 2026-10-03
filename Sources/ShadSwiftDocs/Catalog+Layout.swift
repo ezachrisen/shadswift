@@ -407,7 +407,7 @@ extension DocCatalog {
                 DocAPI("ShadSidebarMenuButton", [
                     DocProperty("title", "String", "Row label; used as a tooltip when collapsed."),
                     DocProperty("icon", "ShadIcon?", default: "nil", "Leading icon; the only thing shown when collapsed."),
-                    DocProperty("isActive", "Bool", default: "false", "Highlights the row."),
+                    DocProperty("isActive", "Bool", default: "false", "Keeps a subtle selection background visible without changing the label weight. Hover uses the stronger highlight."),
                     DocProperty("size", "Size", default: ".default", "sm (28pt), default (32pt) or lg (48pt)."),
                     DocProperty("trailing", "() -> View", "Badge or other trailing content."),
                 ]),
